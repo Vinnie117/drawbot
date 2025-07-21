@@ -31,16 +31,14 @@ def apply_otsu_threshold(gray_image):
     _, bw = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     return bw
 
-bw_fixed = apply_fixed_threshold(gray, 127)
-bw_otsu = apply_otsu_threshold(gray)
-
 def create_image(image, scale_percent):
     # Resize the image to make it smaller (e.g., 20% of original size)
     width = int(image.shape[1] * scale_percent / 100)
     height = int(image.shape[0] * scale_percent / 100)
     return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
 
-
+bw_fixed = apply_fixed_threshold(gray, 127)
+bw_otsu = apply_otsu_threshold(gray)
 img_bw_fixed = create_image(bw_fixed, 20)
 img_bw_otsu = create_image(bw_otsu, 20)
 
@@ -56,15 +54,12 @@ cv2.imwrite('test_bw_otsu.jpg', img_bw_otsu)
 binary  = apply_fixed_threshold(gray, 127)
 binary  = 255 - binary   # black = draw
 
-fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-
-# Combine all contour points into one list
-points = []
-
-for cnt in fixed_contours:
-    for pt in cnt:
-        points.append(pt[0])  # pt
+## Combine all contour points into one list
+#fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#points = []
+#for cnt in fixed_contours:
+#    for pt in cnt:
+#        points.append(pt[0])  # pt
 
 ## For quick prototyping
 #for cnt in fixed_contours:
@@ -76,16 +71,26 @@ for cnt in fixed_contours:
 
 # Randomly sample a subset (e.g., 10,000 points)
 #fill_pixels = np.column_stack(np.where(binary == 1))
-#sample_count = 1000000
+#sample_count = 50000
 #if len(fill_pixels) > sample_count:
 #    indices = np.random.choice(len(fill_pixels), sample_count, replace=False)
 #    fill_pixels = fill_pixels[indices]
+
+# Sample black pixels
+y_coords, x_coords = np.where(binary == 0)
+black_pixels = np.column_stack((x_coords, y_coords))
+sample_count = 1000000  # adjust based on performance
+if len(black_pixels) > sample_count:
+    indices = np.random.choice(len(black_pixels), sample_count, replace=False)
+    black_pixels = black_pixels[indices]
+
+points = black_pixels
 
 
 ################################################################
 # Connect Contours into One Stroke: sort points to create a rough "single-stroke" path
 points = np.array(points)
-#points = np.vstack((points, fill_pixels))
+#points = np.vstack((points, fill_pixels)) # goal here is to use edge points and filled points
 num_points = len(points)
 print(f"Computing {num_points} points")
 
@@ -120,6 +125,6 @@ resized_canvas = cv2.resize(canvas, (width, height), interpolation=cv2.INTER_ARE
 
 # Show the smaller canvas
 cv2.imshow("Single Stroke Path", resized_canvas)
-cv2.imwrite('output.jpg', resized_canvas)
+cv2.imwrite('million_points_2.jpg', resized_canvas)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
