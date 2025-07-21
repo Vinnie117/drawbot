@@ -4,6 +4,7 @@ import math
 from scipy.spatial import KDTree
 import time
 from numba import njit
+from numba_progress import ProgressBar
 
 # Load the image
 image = cv2.imread('test.jpg')
@@ -113,8 +114,8 @@ def fast_greedy_path(points):
     return points[path]
 
 
-@njit
-def greedy_path_numba(points):
+@njit(nogil=True)
+def greedy_path_numba(points, progress_proxy):
     path = [0]
     used = np.zeros(len(points), dtype=np.bool_)
     used[0] = True
@@ -128,31 +129,30 @@ def greedy_path_numba(points):
                 if d < min_dist:
                     min_dist = d
                     next_index = i
+
+            progress_proxy.update(1)
+
         path.append(next_index)
         used[next_index] = True
     return path
 
-def numba_with_progress(points):
-    points_np = np.array(points)
-    total = len(points_np)
-    print(f"Computing path for {total} points...")
-
-    path = greedy_path_numba(points_np)
-
-    return points_np[path]
-
+points = np.array(points)
 
 start = time.time()
-stroke_path = numba_with_progress(points)
+with ProgressBar(total=len(points) - 1) as progress:
+    stroke_path = greedy_path_numba(points, progress)
 end = time.time()
 print(f"✅ Done in {end - start:.2f} seconds.")
 
 
 ################################################################
 # Draw the stroke path on a blank canvas
+stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
 canvas = np.ones_like(gray) * 255  # white background
-for i in range(1, len(stroke_path)):
-    cv2.line(canvas, tuple(stroke_path[i-1]), tuple(stroke_path[i]), 0, 1)
+for i in range(1, len(stroke_coords)):
+    pt1 = stroke_coords[i - 1]
+    pt2 = stroke_coords[i]
+    cv2.line(canvas, pt1, pt2, 0, 1)
 
 # Resize the canvas (e.g., to 20% size)
 scale_percent = 20
