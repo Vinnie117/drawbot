@@ -115,15 +115,15 @@ def fast_greedy_path(points):
 
 
 @njit(nogil=True)
-def greedy_path_numba(points, progress_proxy):
+def greedy_path_numba(points, num_points, progress_proxy):
     path = [0]
-    used = np.zeros(len(points), dtype=np.bool_)
+    used = np.zeros(num_points, dtype=np.bool_)
     used[0] = True
-    for _ in range(1, len(points)):
+    for _ in range(1, num_points):
         last = path[-1]
         min_dist = 1e9
         next_index = -1
-        for i in range(len(points)):
+        for i in range(num_points): 
             if not used[i]:
                 d = distance_numba(points[last], points[i])
                 if d < min_dist:
@@ -137,12 +137,15 @@ def greedy_path_numba(points, progress_proxy):
     return path
 
 points = np.array(points)
+num_points = len(points)
 
 start = time.time()
-with ProgressBar(total=len(points) - 1) as progress:
-    stroke_path = greedy_path_numba(points, progress)
+with ProgressBar(total=(num_points - 1) * num_points) as progress:  # outer loop * inner loop
+    stroke_path = greedy_path_numba(points, num_points, progress)
 end = time.time()
+
 print(f"✅ Done in {end - start:.2f} seconds.")
+
 
 
 ################################################################
