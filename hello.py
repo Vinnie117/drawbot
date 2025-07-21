@@ -60,15 +60,15 @@ fixed_contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX
 # Combine all contour points into one list
 points = []
 
-#for cnt in fixed_contours:
-#    for pt in cnt:
-#        points.append(pt[0])  # pt
-
 for cnt in fixed_contours:
-    epsilon = 3  # try 2–5 for simplification
-    approx = cv2.approxPolyDP(cnt, epsilon, True)
-    for pt in approx:
-        points.append(pt[0])
+    for pt in cnt:
+        points.append(pt[0])  # pt
+
+#for cnt in fixed_contours:
+#    epsilon = 3  # try 2–5 for simplification
+#    approx = cv2.approxPolyDP(cnt, epsilon, True)
+#    for pt in approx:
+#        points.append(pt[0])
 
 
 ################################################################
@@ -139,12 +139,13 @@ def greedy_path_numba(points, num_points, progress_proxy):
 points = np.array(points)
 num_points = len(points)
 
+
 start = time.time()
+print(f"Computing {num_points} points")
 with ProgressBar(total=(num_points - 1) * num_points) as progress:  # outer loop * inner loop
     stroke_path = greedy_path_numba(points, num_points, progress)
 end = time.time()
-
-print(f"✅ Done in {end - start:.2f} seconds.")
+print(f"✅ {num_points} points computed in {end - start:.2f} seconds.")
 
 
 
