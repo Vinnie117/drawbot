@@ -10,9 +10,11 @@ from sklearn.cluster import KMeans
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from tqdm import tqdm
 import numpy as np
-from algos import greedy_path, greedy_path_numba, fast_greedy_path, greedy_path_numba_pb, clustered_greedy_tsp
+from algos import greedy_path, greedy_path_numba, fast_greedy_path, greedy_path_numba_pb
+from algos import clustered_greedy_tsp, compute_penalized_distance_matrix, greedy_path_from_matrix
 
 # Load the image
+#image = cv2.imread('threshold.jpg')
 image = cv2.imread('test.jpg')
 
 # Convert to grayscale
@@ -54,7 +56,8 @@ cv2.imwrite('test_bw_otsu.jpg', img_bw_otsu)
 binary  = apply_fixed_threshold(gray, 127)
 binary  = 255 - binary   # black = draw
 
-fixed_contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
 
 # Combine all contour points into one list
 points = []
@@ -63,21 +66,31 @@ for cnt in fixed_contours:
     for pt in cnt:
         points.append(pt[0])  # pt
 
+## For quick prototyping
 #for cnt in fixed_contours:
-#    epsilon = 3  # try 2–5 for simplification
+#    epsilon = 3  # try 2–5 for simplification (higher epsilon -> less points)
 #    approx = cv2.approxPolyDP(cnt, epsilon, True)
 #    for pt in approx:
 #        points.append(pt[0])
 
 
+# Randomly sample a subset (e.g., 10,000 points)
+#fill_pixels = np.column_stack(np.where(binary == 1))
+#sample_count = 1000000
+#if len(fill_pixels) > sample_count:
+#    indices = np.random.choice(len(fill_pixels), sample_count, replace=False)
+#    fill_pixels = fill_pixels[indices]
+
+
 ################################################################
 # Connect Contours into One Stroke: sort points to create a rough "single-stroke" path
-# greedy approach with traveling salesman 
 points = np.array(points)
+#points = np.vstack((points, fill_pixels))
 num_points = len(points)
-
-
 print(f"Computing {num_points} points")
+
+################################################################
+##approach: greedy approach with traveling salesman 
 start = time.time()
 with ProgressBar(total=(num_points - 1) * num_points) as progress:  # outer loop * inner loop
     stroke_path = greedy_path_numba_pb(points, num_points, progress)

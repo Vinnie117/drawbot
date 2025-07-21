@@ -16,6 +16,46 @@ def distance(p1, p2):
     # Euclidean distance in 2D
     return math.hypot(p1[0]-p2[0], p1[1]-p2[1])
 
+
+def penalized_distance(p1, p2, binary_image, white_penalty=10):
+    # Euclidean distance
+    dist = np.linalg.norm(np.array(p1) - np.array(p2))
+
+    # Sample along the line
+    num_samples = int(dist)
+    if num_samples == 0:
+        return dist
+
+    xs = np.linspace(p1[0], p2[0], num_samples).astype(int)
+    ys = np.linspace(p1[1], p2[1], num_samples).astype(int)
+
+    white_count = 0
+    for x, y in zip(xs, ys):
+        if 0 <= y < binary_image.shape[0] and 0 <= x < binary_image.shape[1]:
+            if binary_image[y, x] == 255:  # white pixel
+                white_count += 1
+
+    white_ratio = white_count / num_samples
+    penalty = dist * (1 + white_ratio * white_penalty)
+    return penalty
+
+
+def compute_penalized_distance_matrix(points, binary_image, white_penalty=10):
+    n = len(points)
+    dist_matrix = np.zeros((n, n), dtype=np.float32)
+
+    for i in tqdm(range(n), desc="Building penalized distance matrix"):
+        for j in range(n):
+            if i == j:
+                dist_matrix[i, j] = 0
+            else:
+                dist_matrix[i, j] = penalized_distance(
+                    points[i], points[j], binary_image, white_penalty
+                )
+
+    return dist_matrix
+
+
 @njit
 def distance_numba(p1, p2):
     return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5
@@ -114,3 +154,29 @@ def clustered_greedy_tsp(points, n_clusters):
         final_path.extend(ordered_points)
 
     return final_path
+
+
+
+@njit(nogil=True)
+def greedy_path_from_matrix(dist_matrix):
+    n = dist_matrix.shape[0]
+    path = [0]
+    used = np.zeros(n, dtype=np.bool_)
+    used[0] = True
+
+    for _ in range(1, n):
+        last = path[-1]
+        min_dist = 1e9
+        next_idx = -1
+
+        for i in range(n):
+            if not used[i]:
+                d = dist_matrix[last, i]
+                if d < min_dist:
+                    min_dist = d
+                    next_idx = i
+
+        path.append(next_idx)
+        used[next_idx] = True
+
+    return path
