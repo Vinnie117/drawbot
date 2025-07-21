@@ -120,5 +120,6 @@ resized_canvas = cv2.resize(canvas, (width, height), interpolation=cv2.INTER_ARE
 
 # Show the smaller canvas
 cv2.imshow("Single Stroke Path", resized_canvas)
+cv2.imwrite('output.jpg', resized_canvas)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
