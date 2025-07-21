@@ -5,6 +5,12 @@ from scipy.spatial import KDTree
 import time
 from numba import njit
 from numba_progress import ProgressBar
+from tqdm import tqdm
+from sklearn.cluster import KMeans
+from ortools.constraint_solver import pywrapcp, routing_enums_pb2
+from tqdm import tqdm
+import numpy as np
+from algos import greedy_path, greedy_path_numba, fast_greedy_path, greedy_path_numba_pb, clustered_greedy_tsp
 
 # Load the image
 image = cv2.imread('test.jpg')
@@ -13,10 +19,6 @@ image = cv2.imread('test.jpg')
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # Apply binary thresholding
-
-#_, bw_image = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-#_, bw_otu = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
 def apply_fixed_threshold(gray_image, threshold=127):
     # 127 is the midpoint of the 8-bit grayscale range (0 to 255),
     _, bw = cv2.threshold(gray_image, threshold, 255, cv2.THRESH_BINARY)
@@ -46,9 +48,6 @@ side_by_side = np.hstack((img_bw_fixed, img_bw_otsu))
 cv2.imwrite('test_bw_fixed.jpg', img_bw_fixed)
 cv2.imwrite('test_bw_otsu.jpg', img_bw_otsu)
 
-#cv2.waitKey(0)
-#cv2.destroyAllWindows()
-
 
 ################################################################
 # Make Contours
@@ -73,85 +72,27 @@ for cnt in fixed_contours:
 
 ################################################################
 # Connect Contours into One Stroke: sort points to create a rough "single-stroke" path
-# greedy or traveling salesman possible
-
-def distance(p1, p2):
-    # Euclidean distance in 2D
-    return math.hypot(p1[0]-p2[0], p1[1]-p2[1])
-
-@njit
-def distance_numba(p1, p2):
-    return ((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)**0.5
-
-def greedy_path(points):
-    path = [points[0]]
-    used = [False] * len(points)
-    used[0] = True
-    for idx in range(1, len(points)):
-        last = path[-1]
-        next_index = min((i for i in range(len(points)) if not used[i]), key=lambda i: distance(last, points[i]))
-        path.append(points[next_index])
-        used[next_index] = True
-        if idx % 100 == 0:
-            print(f"Progress: {idx}/{len(points)}")
-    return path
-
-def fast_greedy_path(points):
-    points = np.array(points)
-    tree = KDTree(points)
-    used = np.zeros(len(points), dtype=bool)
-    path = [0]
-    used[0] = True
-    for _ in range(1, len(points)):
-        dist, idx = tree.query(points[path[-1]], k=len(points))
-        for i in idx:
-            if not used[i]:
-                path.append(i)
-                used[i] = True
-                break
-        if _ % 100 == 0:
-            print(f"Progress: {_}/{len(points)}")
-    return points[path]
-
-
-@njit(nogil=True)
-def greedy_path_numba(points, num_points, progress_proxy):
-    path = [0]
-    used = np.zeros(num_points, dtype=np.bool_)
-    used[0] = True
-    for _ in range(1, num_points):
-        last = path[-1]
-        min_dist = 1e9
-        next_index = -1
-        for i in range(num_points): 
-            if not used[i]:
-                d = distance_numba(points[last], points[i])
-                if d < min_dist:
-                    min_dist = d
-                    next_index = i
-
-            progress_proxy.update(1)
-
-        path.append(next_index)
-        used[next_index] = True
-    return path
-
+# greedy approach with traveling salesman 
 points = np.array(points)
 num_points = len(points)
 
 
-start = time.time()
 print(f"Computing {num_points} points")
+start = time.time()
 with ProgressBar(total=(num_points - 1) * num_points) as progress:  # outer loop * inner loop
-    stroke_path = greedy_path_numba(points, num_points, progress)
+    stroke_path = greedy_path_numba_pb(points, num_points, progress)
 end = time.time()
 print(f"✅ {num_points} points computed in {end - start:.2f} seconds.")
-
+stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
 
 
 ################################################################
+# Approach: Clusters cntours, then local TSPs
+#stroke_coords = clustered_greedy_tsp(points, n_clusters=100)
+
+################################################################
 # Draw the stroke path on a blank canvas
-stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
+
 canvas = np.ones_like(gray) * 255  # white background
 for i in range(1, len(stroke_coords)):
     pt1 = stroke_coords[i - 1]
