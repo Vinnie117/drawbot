@@ -64,7 +64,7 @@ points = []
 #        points.append(pt[0])  # pt
 
 for cnt in fixed_contours:
-    epsilon = 2  # try 2–5 for simplification
+    epsilon = 3  # try 2–5 for simplification
     approx = cv2.approxPolyDP(cnt, epsilon, True)
     for pt in approx:
         points.append(pt[0])
@@ -132,7 +132,7 @@ def greedy_path_numba(points):
         used[next_index] = True
     return path
 
-def numba_with_progress(points, chunk=100):
+def numba_with_progress(points):
     points_np = np.array(points)
     total = len(points_np)
     print(f"Computing path for {total} points...")
