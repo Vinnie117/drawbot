@@ -13,41 +13,13 @@ import numpy as np
 from algos import greedy_path, greedy_path_numba, fast_greedy_path, greedy_path_numba_pb
 from algos import clustered_greedy_tsp, compute_penalized_distance_matrix, greedy_path_from_matrix
 import matplotlib.pyplot as plt
+from utils.image_helper import apply_fixed_threshold, apply_otsu_threshold, create_image
 
 # Load the image
-#image = cv2.imread('threshold.jpg')
-image = cv2.imread('test.jpg')
+image = cv2.imread('images/hokusai_wave.jpg')
 
 # Convert to grayscale
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-# Apply binary thresholding
-def apply_fixed_threshold(gray_image, threshold=127):
-    # 127 is the midpoint of the 8-bit grayscale range (0 to 255),
-    _, bw = cv2.threshold(gray_image, threshold, 255, cv2.THRESH_BINARY)
-    return bw
-
-def apply_otsu_threshold(gray_image):
-    # Otsu’s method (automatic thresholding):
-    _, bw = cv2.threshold(gray_image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    return bw
-
-def create_image(image, scale_percent):
-    # Resize the image to make it smaller (e.g., 20% of original size)
-    width = int(image.shape[1] * scale_percent / 100)
-    height = int(image.shape[0] * scale_percent / 100)
-    return cv2.resize(image, (width, height), interpolation=cv2.INTER_AREA)
-
-bw_fixed = apply_fixed_threshold(gray, 127)
-bw_otsu = apply_otsu_threshold(gray)
-img_bw_fixed = create_image(bw_fixed, 20)
-img_bw_otsu = create_image(bw_otsu, 20)
-
-
-side_by_side = np.hstack((img_bw_fixed, img_bw_otsu))
-#cv2.imshow('Fixed vs Otsu Threshold', side_by_side)
-cv2.imwrite('test_bw_fixed.jpg', img_bw_fixed)
-cv2.imwrite('test_bw_otsu.jpg', img_bw_otsu)
 
 
 ################################################################
@@ -55,12 +27,12 @@ cv2.imwrite('test_bw_otsu.jpg', img_bw_otsu)
 binary  = apply_fixed_threshold(gray, 127)
 binary  = 255 - binary   # black = draw
 
-## Combine all contour points into one list
-#fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-#points = []
-#for cnt in fixed_contours:
-#    for pt in cnt:
-#        points.append(pt[0])  # pt
+# Combine all contour points into one list
+fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+points = []
+for cnt in fixed_contours:
+    for pt in cnt:
+        points.append(pt[0])  # pt
 
 ## For quick prototyping
 #for cnt in fixed_contours:
@@ -77,15 +49,15 @@ binary  = 255 - binary   # black = draw
 #    indices = np.random.choice(len(fill_pixels), sample_count, replace=False)
 #    fill_pixels = fill_pixels[indices]
 
-# Sample black pixels (!=0) or white (==0)
-y_coords, x_coords = np.where(binary != 0)
-black_pixels = np.column_stack((x_coords, y_coords))
-sample_count = 50000  # adjust based on performance
-if len(black_pixels) > sample_count:
-    indices = np.random.choice(len(black_pixels), sample_count, replace=False)
-    black_pixels = black_pixels[indices]
+## Sample black pixels (!=0) or white (==0)
+#y_coords, x_coords = np.where(binary != 0)
+#black_pixels = np.column_stack((x_coords, y_coords))
+#sample_count = 50000  # adjust based on performance
+#if len(black_pixels) > sample_count:
+#    indices = np.random.choice(len(black_pixels), sample_count, replace=False)
+#    black_pixels = black_pixels[indices]
 
-points = black_pixels
+#points = black_pixels
 
 
 ################################################################
