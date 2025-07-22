@@ -77,9 +77,9 @@ binary  = 255 - binary   # black = draw
 #    fill_pixels = fill_pixels[indices]
 
 # Sample black pixels
-y_coords, x_coords = np.where(binary == 0)
+y_coords, x_coords = np.where(binary != 0)
 black_pixels = np.column_stack((x_coords, y_coords))
-sample_count = 1000000  # adjust based on performance
+sample_count = 200000  # adjust based on performance
 if len(black_pixels) > sample_count:
     indices = np.random.choice(len(black_pixels), sample_count, replace=False)
     black_pixels = black_pixels[indices]
@@ -125,6 +125,6 @@ resized_canvas = cv2.resize(canvas, (width, height), interpolation=cv2.INTER_ARE
 
 # Show the smaller canvas
 cv2.imshow("Single Stroke Path", resized_canvas)
-cv2.imwrite('million_points_2.jpg', resized_canvas)
+cv2.imwrite('million_points_200k.jpg', resized_canvas)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
