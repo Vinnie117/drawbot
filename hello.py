@@ -12,6 +12,7 @@ from tqdm import tqdm
 import numpy as np
 from algos import greedy_path, greedy_path_numba, fast_greedy_path, greedy_path_numba_pb
 from algos import clustered_greedy_tsp, compute_penalized_distance_matrix, greedy_path_from_matrix
+import matplotlib.pyplot as plt
 
 # Load the image
 #image = cv2.imread('threshold.jpg')
@@ -76,10 +77,10 @@ binary  = 255 - binary   # black = draw
 #    indices = np.random.choice(len(fill_pixels), sample_count, replace=False)
 #    fill_pixels = fill_pixels[indices]
 
-# Sample black pixels
+# Sample black pixels (!=0) or white (==0)
 y_coords, x_coords = np.where(binary != 0)
 black_pixels = np.column_stack((x_coords, y_coords))
-sample_count = 200000  # adjust based on performance
+sample_count = 50000  # adjust based on performance
 if len(black_pixels) > sample_count:
     indices = np.random.choice(len(black_pixels), sample_count, replace=False)
     black_pixels = black_pixels[indices]
@@ -118,13 +119,34 @@ for i in range(1, len(stroke_coords)):
     cv2.line(canvas, pt1, pt2, 0, 1)
 
 # Resize the canvas (e.g., to 20% size)
-scale_percent = 20
+scale_percent = 50
 width = int(canvas.shape[1] * scale_percent / 100)
 height = int(canvas.shape[0] * scale_percent / 100)
 resized_canvas = cv2.resize(canvas, (width, height), interpolation=cv2.INTER_AREA)
 
 # Show the smaller canvas
-cv2.imshow("Single Stroke Path", resized_canvas)
-cv2.imwrite('million_points_200k.jpg', resized_canvas)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+#cv2.imshow("Single Stroke Path", resized_canvas)
+#cv2.imwrite('million_points_200k.jpg', resized_canvas)
+#cv2.waitKey(0)
+#cv2.destroyAllWindows()
+
+#plt.figure(figsize=(8, 6))
+plt.imshow(resized_canvas, cmap='gray')
+plt.axis('off')
+plt.title('Single Stroke Path')
+
+# Get current axes
+ax = plt.gca()
+
+# Add left-aligned text relative to the image (axes)
+annotation = "Bla\n" \
+             "Bli\n" \
+             "Blubb"
+
+ax.text(0.0, -0.1, annotation,
+        transform=ax.transAxes,
+        ha='left', va='top', fontsize=10)
+
+plt.subplots_adjust(bottom=0.25)  # Add space below for the text
+plt.show()
+
