@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from main import create_drawing
 import cv2
+from datetime import datetime
 
 ROOT_FOLDER = 'images/'
 INPUT_FOLDER = 'input/'
@@ -11,6 +12,7 @@ THRESHOLD = 127
 METHOD = 'fill'
 POINTS_SAMPLED = 150000
 COLOUR_SAMPLED = 'black'
+timestamp = datetime.now().strftime('%Y%m%d_%H%M')
 
 test_image = create_drawing(img_path = ROOT_FOLDER + INPUT_FOLDER + BASE_IMAGE,
                       resize_pct=RESIZE_PCT,
@@ -23,7 +25,7 @@ test_image = create_drawing(img_path = ROOT_FOLDER + INPUT_FOLDER + BASE_IMAGE,
 #cv2.imshow('Preview', test_image)
 #cv2.waitKey(0)
 #cv2.destroyAllWindows()
-cv2.imwrite(ROOT_FOLDER + OUTPUT_FOLDER + 'CV_' + BASE_IMAGE, test_image)
+cv2.imwrite(ROOT_FOLDER + OUTPUT_FOLDER + 'CV_' + BASE_IMAGE.replace('.', f'_{timestamp}.'), test_image)
 
 
 plt.imshow(test_image, cmap='gray')
@@ -45,4 +47,4 @@ ax.text(0.0, -0.1, annotation,
         ha='left', va='top', fontsize=10)
 
 plt.subplots_adjust(bottom=0.25)  # Add space below for the text
-plt.savefig(ROOT_FOLDER + OUTPUT_FOLDER + 'PLT_' + BASE_IMAGE, dpi=300, bbox_inches='tight')
+plt.savefig(ROOT_FOLDER + OUTPUT_FOLDER + 'PLT_' + BASE_IMAGE.replace('.', f'_{timestamp}.'), dpi=300, bbox_inches='tight')
