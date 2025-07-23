@@ -4,6 +4,10 @@ import cv2
 from datetime import datetime
 import os
 
+# TODO
+# - smooth path?
+# - save the single stroke as txt
+
 BASE_IMAGE = 'hokusai_wave'
 BASE_IMAGE_FILE = BASE_IMAGE +'.jpg'
 ROOT_FOLDER = 'images/'
@@ -13,9 +17,9 @@ OUTPUT_FOLDER = 'output/'
 
 # Define multiple configurations to run
 configs = [
-    {"RESIZE_PCT": 100, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 200000, "COLOUR_SAMPLED": "black"},
-    {"RESIZE_PCT": 20, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 200000, "COLOUR_SAMPLED": "black"},
-    {"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black"},
+    {"RESIZE_PCT": 100, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 200000, "COLOUR_SAMPLED": "black", "SMOOTHING": None},
+    {"RESIZE_PCT": 20, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 200000, "COLOUR_SAMPLED": "black", "SMOOTHING": None},
+    {"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black", "SMOOTHING": None},
 ]
 
 
@@ -38,7 +42,8 @@ for config in configs:
         threshold=config["THRESHOLD"],
         method=config["METHOD"],
         points_sampled=config["POINTS_SAMPLED"],
-        colour_sampled=config["COLOUR_SAMPLED"]
+        colour_sampled=config["COLOUR_SAMPLED"],
+        smoothing=config["SMOOTHING"],
     )
 
 
@@ -72,3 +77,4 @@ for config in configs:
     plt_filename = f'{BASE_IMAGE}_{timestamp}.png'
     plt_filepath = os.path.join(plt_output_path, plt_filename)
     plt.savefig(plt_filepath, dpi=300, bbox_inches='tight')
+    plt.clf()

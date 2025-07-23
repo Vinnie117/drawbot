@@ -5,13 +5,16 @@ import time
 from utils.image_helper import apply_fixed_threshold, apply_otsu_threshold
 from algos import greedy_path_numba_pb
 from numba_progress import ProgressBar
+from scipy.interpolate import splprep, splev
+from scipy.signal import savgol_filter
 
 def create_drawing(img_path: str, 
                    resize_pct: int,
                    threshold: Union[int, str], 
                    method: str,
                    points_sampled: int = None,
-                   colour_sampled: str = None):
+                   colour_sampled: str = None,
+                   smoothing: dict = None):
     
     # validation of function call
     if method not in {"contour", "fill"}:
@@ -28,6 +31,19 @@ def create_drawing(img_path: str,
         if colour_sampled not in {"black", "white"}:
             raise ValueError("When method is 'fill', 'color_sampled' must be either 'black' or 'white'.")
         
+    # Check smoothing dict
+    if smoothing is not None:
+        allowed_keys = {"window_length", "poly_order"}
+        for key in smoothing:
+            if key not in allowed_keys:
+                raise ValueError(f"Invalid parameter: '{key}'. Allowed keys are: {allowed_keys}")
+        window_length = smoothing['window_length']
+        poly_order = smoothing['poly_order']
+        if not isinstance(window_length, int) or window_length < 3 or window_length % 2 == 0:
+            raise ValueError("window_length must be an odd integer ≥ 3")
+        if not isinstance(poly_order, int) or poly_order < 0 or poly_order >= window_length:
+            raise ValueError("poly_order must be a non-negative integer < window_length")
+
 
     drawing = None
     points = []
@@ -96,9 +112,14 @@ def create_drawing(img_path: str,
         stroke_path = greedy_path_numba_pb(points, num_points, progress)
     end = time.time()
     print(f"✅ {num_points} points computed in {end - start:.2f} seconds.")
-    stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
 
-
+    if smoothing is not None:
+        ordered = np.array([points[i] for i in stroke_path])
+        x_smooth = savgol_filter(ordered[:, 0], window_length, poly_order)  # e.g. window size 51, poly order 3
+        y_smooth = savgol_filter(ordered[:, 1], window_length, poly_order)
+        stroke_coords = list(zip(x_smooth.astype(int), y_smooth.astype(int)))
+    else:
+        stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
 
     # Draw the stroke path on a blank canvas
     drawing = np.ones_like(gray) * 255  # white background
