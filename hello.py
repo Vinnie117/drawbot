@@ -27,12 +27,12 @@ gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 binary  = apply_fixed_threshold(gray, 127)
 binary  = 255 - binary   # black = draw
 
-# Combine all contour points into one list
-fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-points = []
-for cnt in fixed_contours:
-    for pt in cnt:
-        points.append(pt[0])  # pt
+## Combine all contour points into one list
+#fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#points = []
+#for cnt in fixed_contours:
+#    for pt in cnt:
+#        points.append(pt[0])  # pt
 
 ## For quick prototyping
 #for cnt in fixed_contours:
@@ -49,15 +49,15 @@ for cnt in fixed_contours:
 #    indices = np.random.choice(len(fill_pixels), sample_count, replace=False)
 #    fill_pixels = fill_pixels[indices]
 
-## Sample black pixels (!=0) or white (==0)
-#y_coords, x_coords = np.where(binary != 0)
-#black_pixels = np.column_stack((x_coords, y_coords))
-#sample_count = 50000  # adjust based on performance
-#if len(black_pixels) > sample_count:
-#    indices = np.random.choice(len(black_pixels), sample_count, replace=False)
-#    black_pixels = black_pixels[indices]
+# Sample black pixels (!=0) or white (==0)
+y_coords, x_coords = np.where(binary != 0)
+black_pixels = np.column_stack((x_coords, y_coords))
+sample_count = 100000  # adjust based on performance
+if len(black_pixels) > sample_count:
+    indices = np.random.choice(len(black_pixels), sample_count, replace=False)
+    black_pixels = black_pixels[indices]
 
-#points = black_pixels
+points = black_pixels
 
 
 ################################################################
@@ -91,7 +91,7 @@ for i in range(1, len(stroke_coords)):
     cv2.line(canvas, pt1, pt2, 0, 1)
 
 # Resize the canvas (e.g., to 20% size)
-scale_percent = 50
+scale_percent = 20
 width = int(canvas.shape[1] * scale_percent / 100)
 height = int(canvas.shape[0] * scale_percent / 100)
 resized_canvas = cv2.resize(canvas, (width, height), interpolation=cv2.INTER_AREA)
