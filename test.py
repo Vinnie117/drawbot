@@ -5,7 +5,6 @@ from datetime import datetime
 import os
 
 # TODO
-# - smooth path?
 # - save the single stroke as txt
 
 BASE_IMAGE = 'hokusai_wave'
@@ -17,9 +16,11 @@ OUTPUT_FOLDER = 'output/'
 
 # Define multiple configurations to run
 configs = [
-    {"RESIZE_PCT": 100, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 200000, "COLOUR_SAMPLED": "black", "SMOOTHING": None},
-    {"RESIZE_PCT": 20, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 200000, "COLOUR_SAMPLED": "black", "SMOOTHING": None},
-    {"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black", "SMOOTHING": None},
+    {"RESIZE_PCT": 100, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 100000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
+    {"RESIZE_PCT": 20, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 100000, "COLOUR_SAMPLED": "black", "SMOOTH": {
+        'window_length': 51, 'poly_order': 3}
+    },
+    #{"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
 ]
 
 
@@ -43,7 +44,7 @@ for config in configs:
         method=config["METHOD"],
         points_sampled=config["POINTS_SAMPLED"],
         colour_sampled=config["COLOUR_SAMPLED"],
-        smoothing=config["SMOOTHING"],
+        smoothing=config["SMOOTH"],
     )
 
 
@@ -72,6 +73,19 @@ for config in configs:
     ax.text(0.0, -0.1, annotation,
             transform=ax.transAxes,
             ha='left', va='top', fontsize=10)
+    
+    # Right-aligned annotation (same y-coordinate)
+    smooth_config = config['SMOOTH']
+    if smooth_config is None:
+        smooth_annotation = "SMOOTH: NONE"
+    else:
+        smooth_annotation = "SMOOTH:\n" + "\n".join(
+            [f"  {k}: {v}" for k, v in smooth_config.items()]
+        )
+    ax.text(1.0, -0.1, smooth_annotation,
+            transform=ax.transAxes,
+            ha='right', va='top', fontsize=10)
+    
     plt.subplots_adjust(bottom=0.25)  # Add space below for the text
 
     plt_filename = f'{BASE_IMAGE}_{timestamp}.png'
