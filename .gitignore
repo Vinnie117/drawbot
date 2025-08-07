@@ -1,2 +1,4 @@
 *.pyc
 images/output/*
+!images/output/demo/
+!images/output/demo/**
