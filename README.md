@@ -14,7 +14,7 @@ Or so:
   <tr>
     <td align="center"><img src="images/input/hokusai_wave.jpg" width="200px"></td>
     <td align="center" style="vertical-align: middle; font-size: 32px;">➡️</td>
-    <td align="center"><img src="images/output/demo/hokusai_wave_20250723_2152.jpg" width="200px"></td>
+    <td align="center"><img src="images/output/demo/hokusai_wave_20250724_1801.jpg" width="200px"></td>
     <td align="center" style="vertical-align: middle; font-size: 32px;">➡️</td>
     <td align="center"><img src="images/output/demo/hokusai_wave_20250725_1349.jpg" width="200px"></td>
   </tr>
