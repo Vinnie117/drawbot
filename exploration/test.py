@@ -10,8 +10,8 @@ from sklearn.cluster import KMeans
 from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from tqdm import tqdm
 import numpy as np
-from algos import greedy_path, greedy_path_numba, fast_greedy_path, greedy_path_numba_pb
-from algos import clustered_greedy_tsp, compute_penalized_distance_matrix, greedy_path_from_matrix
+from algos.traveling_salesman import greedy_path, greedy_path_numba, fast_greedy_path, approach_greedy
+from algos.traveling_salesman import clustered_greedy_tsp, compute_penalized_distance_matrix, greedy_path_from_matrix
 import matplotlib.pyplot as plt
 from utils.image_helper import apply_fixed_threshold, apply_otsu_threshold, create_image
 
@@ -71,7 +71,7 @@ print(f"Computing {num_points} points")
 ##approach: greedy approach with traveling salesman 
 start = time.time()
 with ProgressBar(total=(num_points - 1) * num_points) as progress:  # outer loop * inner loop
-    stroke_path = greedy_path_numba_pb(points, num_points, progress)
+    stroke_path = approach_greedy(points, num_points, progress)
 end = time.time()
 print(f"✅ {num_points} points computed in {end - start:.2f} seconds.")
 stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
