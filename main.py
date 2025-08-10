@@ -1,131 +1,94 @@
+import matplotlib.pyplot as plt
+from utils.draw import create_drawing
 import cv2
-import numpy as np
-from typing import Union
-import time
-from utils.image_helper import apply_fixed_threshold, apply_otsu_threshold
-from algos import greedy_path_numba_pb
-from numba_progress import ProgressBar
-from scipy.interpolate import splprep, splev
-from scipy.signal import savgol_filter
+from datetime import datetime
+import os
 
-def create_drawing(img_path: str, 
-                   resize_pct: int,
-                   threshold: Union[int, str], 
-                   method: str,
-                   points_sampled: int = None,
-                   colour_sampled: str = None,
-                   smoothing: dict = None):
+# TODO
+# - save the single stroke as txt
+
+BASE_IMAGE = 'hokusai_wave'
+BASE_IMAGE_FILE = BASE_IMAGE +'.jpg'
+ROOT_FOLDER = 'images/'
+INPUT_FOLDER = 'input/'
+OUTPUT_FOLDER = 'output/'
+
+
+# Define multiple configurations to run
+configs = [
+    {"RESIZE_PCT": 100, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 100000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
+    {"RESIZE_PCT": 20, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 100000, "COLOUR_SAMPLED": "black", "SMOOTH": {
+        'window_length': 51, 'poly_order': 3}
+    },
+    #{"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
+]
+
+
+for config in configs:
     
-    # validation of function call
-    if method not in {"contour", "fill"}:
-        raise ValueError("method must be either 'contour' or 'fill'")
+    # Timestamp per run
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+
+    # create folders to store results
+    base_output_path = os.path.join(ROOT_FOLDER, OUTPUT_FOLDER, BASE_IMAGE)
+    cv_output_path = os.path.join(base_output_path, 'cv')
+    plt_output_path = os.path.join(base_output_path, 'plt')
+    os.makedirs(cv_output_path, exist_ok=True)
+    os.makedirs(plt_output_path, exist_ok=True)
+
+    # Create the drawing
+    test_image = create_drawing(
+        img_path=os.path.join(ROOT_FOLDER, INPUT_FOLDER, BASE_IMAGE_FILE),
+        resize_pct=config["RESIZE_PCT"],
+        threshold=config["THRESHOLD"],
+        method=config["METHOD"],
+        points_sampled=config["POINTS_SAMPLED"],
+        colour_sampled=config["COLOUR_SAMPLED"],
+        smoothing=config["SMOOTH"],
+    )
+
+
+
+    #cv2.imshow('Preview', test_image)
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows()
+    cv_filename = f'{BASE_IMAGE}_{timestamp}.jpg'
+    cv_filepath = os.path.join(cv_output_path, cv_filename)
+    cv2.imwrite(cv_filepath, test_image)
+
+    plt.imshow(test_image, cmap='gray')
+    plt.axis('off')
+    plt.title(BASE_IMAGE_FILE)
+
+    # Get current axes
+    ax = plt.gca()
+
+    # Add left-aligned text relative to the image (axes)
+    annotation = f"RESIZE_PCT: {config['RESIZE_PCT']}\n" \
+                 f"THRESHOLD: {config['THRESHOLD']}\n" \
+                 f"POINTS_SAMPLED: {config['POINTS_SAMPLED']}\n" \
+                 f"METHOD: {config['METHOD']}\n" \
+                 f"COLOUR_SAMPLED: {config['COLOUR_SAMPLED']}"
+
+    ax.text(0.0, -0.1, annotation,
+            transform=ax.transAxes,
+            ha='left', va='top', fontsize=10)
     
-    valid_threshold = (isinstance(threshold, int) and 0 <= threshold <= 255) or threshold == 'otsu'
-    if not valid_threshold:
-        raise ValueError("Threshold must be an integer (0-255) or 'otsu'")
-    
-    # Validate fill_value if method is 'fill'
-    if method == "fill":
-        if not isinstance(points_sampled, int):
-            raise ValueError("When method is 'fill', an integer 'points_sampled' must be provided.")
-        if colour_sampled not in {"black", "white"}:
-            raise ValueError("When method is 'fill', 'color_sampled' must be either 'black' or 'white'.")
-        
-    # Check smoothing dict
-    if smoothing is not None:
-        allowed_keys = {"window_length", "poly_order"}
-        for key in smoothing:
-            if key not in allowed_keys:
-                raise ValueError(f"Invalid parameter: '{key}'. Allowed keys are: {allowed_keys}")
-        window_length = smoothing['window_length']
-        poly_order = smoothing['poly_order']
-        if not isinstance(window_length, int) or window_length < 3 or window_length % 2 == 0:
-            raise ValueError("window_length must be an odd integer ≥ 3")
-        if not isinstance(poly_order, int) or poly_order < 0 or poly_order >= window_length:
-            raise ValueError("poly_order must be a non-negative integer < window_length")
-
-
-    drawing = None
-    points = []
-
-    # Load the image
-    image = cv2.imread(img_path)
-    if image is None:
-        raise FileNotFoundError(f"Image at path '{img_path}' could not be loaded.")
-    # Print original image size
-    original_height, original_width = image.shape[:2]
-    print(f"Original image size: {original_width} x {original_height}")
-
-    # Define scale factor as a percentage (e.g., 50% of original size)
-    scale_percent = resize_pct
-    # Convert percent to scaling factor
-    scale = scale_percent / 100.0
-    # Compute new dimensions
-    new_width = int(original_width * scale)
-    new_height = int(original_height * scale)
-    # Choose interpolation method
-    interpolation = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_CUBIC
-    # Resize the image
-    resized_image = cv2.resize(image, (new_width, new_height), interpolation=interpolation)
-
-
-    # Convert to grayscale
-    gray = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY)
-
-
-    # determine which points are black and white
-    match threshold:
-        case int() as value if 0 <= value <= 255:
-            binary  = apply_fixed_threshold(gray, threshold=value)
-        case 'otsu':
-            binary  = apply_otsu_threshold(gray)
-    binary  = 255 - binary # Invert binary image
-
-
-    if method == "contour":
-        # combine all contour points into one list
-        fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        for cnt in fixed_contours:
-            for pt in cnt:
-                points.append(pt[0]) 
+    # Right-aligned annotation (same y-coordinate)
+    smooth_config = config['SMOOTH']
+    if smooth_config is None:
+        smooth_annotation = "SMOOTH: NONE"
     else:
-        # Sample black pixels (!=0) or white (==0)
-        if colour_sampled == 'black':
-            y_coords, x_coords = np.where(binary != 0)
-        else:
-            y_coords, x_coords = np.where(binary == 0)
-        black_pixels = np.column_stack((x_coords, y_coords))
-        sample_count = points_sampled  # adjust based on performance
-        if len(black_pixels) > sample_count:
-            indices = np.random.choice(len(black_pixels), sample_count, replace=False)
-            black_pixels = black_pixels[indices]
+        smooth_annotation = "SMOOTH:\n" + "\n".join(
+            [f"  {k}: {v}" for k, v in smooth_config.items()]
+        )
+    ax.text(1.0, -0.1, smooth_annotation,
+            transform=ax.transAxes,
+            ha='right', va='top', fontsize=10)
+    
+    plt.subplots_adjust(bottom=0.25)  # Add space below for the text
 
-        points = black_pixels
-
-    points = np.array(points)
-    num_points = len(points)
-    print(f"Computing {num_points} points")
-
-    # Calculate single strike path
-    start = time.time()
-    with ProgressBar(total=(num_points - 1) * num_points) as progress:  # outer loop * inner loop
-        stroke_path = greedy_path_numba_pb(points, num_points, progress)
-    end = time.time()
-    print(f"✅ {num_points} points computed in {end - start:.2f} seconds.")
-
-    if smoothing is not None:
-        ordered = np.array([points[i] for i in stroke_path])
-        x_smooth = savgol_filter(ordered[:, 0], window_length, poly_order)  # e.g. window size 51, poly order 3
-        y_smooth = savgol_filter(ordered[:, 1], window_length, poly_order)
-        stroke_coords = list(zip(x_smooth.astype(int), y_smooth.astype(int)))
-    else:
-        stroke_coords = [tuple(map(int, points[i])) for i in stroke_path]
-
-    # Draw the stroke path on a blank canvas
-    drawing = np.ones_like(gray) * 255  # white background
-    for i in range(1, len(stroke_coords)):
-        pt1 = stroke_coords[i - 1]
-        pt2 = stroke_coords[i]
-        cv2.line(drawing, pt1, pt2, 0, 1)
-
-    return drawing
+    plt_filename = f'{BASE_IMAGE}_{timestamp}.png'
+    plt_filepath = os.path.join(plt_output_path, plt_filename)
+    plt.savefig(plt_filepath, dpi=300, bbox_inches='tight')
+    plt.clf()
