@@ -1,13 +1,11 @@
 import matplotlib.pyplot as plt
-from utils.draw import create_drawing
+from utils.draw import create_drawing, save_stroke_svg_centered_for_axidraw
 import cv2
 from datetime import datetime
 import os
 
-# TODO
-# - save the single stroke as txt
 
-BASE_IMAGE = 'hokusai_wave'
+BASE_IMAGE = 'vermeers_earring'
 BASE_IMAGE_FILE = BASE_IMAGE +'.jpg'
 ROOT_FOLDER = 'images/'
 INPUT_FOLDER = 'input/'
@@ -16,9 +14,9 @@ OUTPUT_FOLDER = 'output/'
 
 # Define multiple configurations to run
 configs = [
-    {"RESIZE_PCT": 100, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 100000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
-    {"RESIZE_PCT": 20, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 100000, "COLOUR_SAMPLED": "black", "SMOOTH": {
-        'window_length': 51, 'poly_order': 3}
+    #{"RESIZE_PCT": 50, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 1000000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
+    {"RESIZE_PCT": 50, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 350000, "COLOUR_SAMPLED": "black", "SMOOTH": {
+        'window_length': 11, 'poly_order': 2}
     },
     #{"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
 ]
@@ -32,12 +30,15 @@ for config in configs:
     # create folders to store results
     base_output_path = os.path.join(ROOT_FOLDER, OUTPUT_FOLDER, BASE_IMAGE)
     cv_output_path = os.path.join(base_output_path, 'cv')
+    svg_output_path = os.path.join(base_output_path, 'svg')
     plt_output_path = os.path.join(base_output_path, 'plt')
     os.makedirs(cv_output_path, exist_ok=True)
     os.makedirs(plt_output_path, exist_ok=True)
+    os.makedirs(svg_output_path, exist_ok=True)
+
 
     # Create the drawing
-    test_image = create_drawing(
+    test_image, stroke_coords = create_drawing(
         img_path=os.path.join(ROOT_FOLDER, INPUT_FOLDER, BASE_IMAGE_FILE),
         resize_pct=config["RESIZE_PCT"],
         threshold=config["THRESHOLD"],
@@ -55,6 +56,15 @@ for config in configs:
     cv_filename = f'{BASE_IMAGE}_{timestamp}.jpg'
     cv_filepath = os.path.join(cv_output_path, cv_filename)
     cv2.imwrite(cv_filepath, test_image)
+
+
+    svg_filename = f'{BASE_IMAGE}_{timestamp}.svg'
+    svg_filepath = os.path.join(svg_output_path, svg_filename)
+    h, w = test_image.shape[:2]
+
+    save_stroke_svg_centered_for_axidraw(stroke_coords, 600, 710, svg_filepath)
+
+
 
     plt.imshow(test_image, cmap='gray')
     plt.axis('off')

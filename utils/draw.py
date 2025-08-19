@@ -128,4 +128,49 @@ def create_drawing(img_path: str,
         pt2 = stroke_coords[i]
         cv2.line(drawing, pt1, pt2, 0, 1)
 
-    return drawing
+    return drawing, stroke_coords
+
+
+def save_stroke_svg_centered_for_axidraw(
+    stroke_coords,
+    width, height,            # size of your artwork's coordinate system
+    svg_path,
+    stroke="black",
+    stroke_width=1,
+    portrait=True,
+    margin_px=0
+):
+    # A4 size expressed in CSS px/user units at 96 DPI
+    A4_W_PX = 793.7007874015749  # 210mm
+    A4_H_PX = 1122.51968503937   # 297mm
+    if not portrait:
+        A4_W_PX, A4_H_PX = A4_H_PX, A4_W_PX
+
+    # Centering (optionally with margin)
+    x = max((A4_W_PX - width) / 2.0, margin_px)
+    y = max((A4_H_PX - height) / 2.0, margin_px)
+    x = min(x, max(A4_W_PX - width - margin_px, 0))
+    y = min(y, max(A4_H_PX - height - margin_px, 0))
+
+    outer_w_mm = "210mm" if portrait else "297mm"
+    outer_h_mm = "297mm" if portrait else "210mm"
+
+    # Build path
+    path_elem = ""
+    if stroke_coords:
+        move = f"M {stroke_coords[0][0]} {stroke_coords[0][1]}"
+        lines = " ".join(f"L {x} {y}" for (x, y) in stroke_coords[1:])
+        d = f"{move} {lines}"
+        path_elem = f'    <path d="{d}" fill="none" stroke="{stroke}" stroke-width="{stroke_width}" />\n'
+
+    svg = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'     width="{outer_w_mm}" height="{outer_h_mm}" '
+        f'     viewBox="0 0 {A4_W_PX:.4f} {A4_H_PX:.4f}">\n'
+        f'  <g transform="translate({x:.4f},{y:.4f})">\n'
+        f'{path_elem}'
+        f'  </g>\n'
+        f'</svg>\n'
+    )
+    with open(svg_path, "w", encoding="utf-8") as f:
+        f.write(svg)
