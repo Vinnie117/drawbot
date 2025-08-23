@@ -131,46 +131,87 @@ def create_drawing(img_path: str,
     return drawing, stroke_coords
 
 
-def save_stroke_svg_centered_for_axidraw(
+def path_to_centered_svg(
     stroke_coords,
-    width, height,            # size of your artwork's coordinate system
+    width, height,                  # inner artwork size in px/user units
     svg_path,
     stroke="black",
     stroke_width=1,
+    paper="A4",                     # "A5", "A4", "A3" (or a (w_mm, h_mm) tuple)
     portrait=True,
-    margin_px=0
+    margin=0,                       # margin amount
+    margin_unit="px",               # "px" or "mm"
+    dpi=96                          # CSS px per inch; AxiDraw/inkscape default is 96
 ):
-    # A4 size expressed in CSS px/user units at 96 DPI
-    A4_W_PX = 793.7007874015749  # 210mm
-    A4_H_PX = 1122.51968503937   # 297mm
+    """
+    Create a single-root SVG sized to the chosen paper (A5/A4/A3 or custom mm tuple),
+    and center your path without scaling by translating a <g>.
+
+    - Keeps AxiDraw happy (no nested <svg>).
+    - Uses mm for outer width/height (print size), and a px-based viewBox.
+    - 'width'/'height' define your artwork's own coordinate system; no scaling applied.
+    """
+
+    # Paper sizes in millimeters
+    PRESETS_MM = {
+        "A5": (148.0, 210.0),
+        "A4": (210.0, 297.0),
+        "A3": (297.0, 420.0),
+    }
+
+    # Resolve paper size in mm
+    if isinstance(paper, (tuple, list)) and len(paper) == 2:
+        page_w_mm, page_h_mm = float(paper[0]), float(paper[1])
+    else:
+        key = str(paper).upper()
+        if key not in PRESETS_MM:
+            raise ValueError(f"Unsupported paper '{paper}'. Use 'A5', 'A4', 'A3', or (w_mm, h_mm).")
+        page_w_mm, page_h_mm = PRESETS_MM[key]
+
+    # Portrait vs landscape
     if not portrait:
-        A4_W_PX, A4_H_PX = A4_H_PX, A4_W_PX
+        page_w_mm, page_h_mm = page_h_mm, page_w_mm
 
-    # Centering (optionally with margin)
-    x = max((A4_W_PX - width) / 2.0, margin_px)
-    y = max((A4_H_PX - height) / 2.0, margin_px)
-    x = min(x, max(A4_W_PX - width - margin_px, 0))
-    y = min(y, max(A4_H_PX - height - margin_px, 0))
+    # Unit conversions
+    def mm_to_px(mm): return mm * dpi / 25.4
 
-    outer_w_mm = "210mm" if portrait else "297mm"
-    outer_h_mm = "297mm" if portrait else "210mm"
+    page_w_px = mm_to_px(page_w_mm)
+    page_h_px = mm_to_px(page_h_mm)
 
-    # Build path
-    path_elem = ""
+    # Margin handling
+    margin_px = float(margin) if margin_unit == "px" else mm_to_px(float(margin))
+
+    # Desired centered offsets
+    cx = (page_w_px - width) / 2.0
+    cy = (page_h_px - height) / 2.0
+
+    # Clamp into page bounds (respect margin but never go negative / overflow)
+    lower_x = max(0.0, margin_px)
+    lower_y = max(0.0, margin_px)
+    upper_x = max(0.0, page_w_px - width - margin_px)
+    upper_y = max(0.0, page_h_px - height - margin_px)
+
+    x = min(max(cx, lower_x), upper_x)
+    y = min(max(cy, lower_y), upper_y)
+
+    # Build path (or empty group if no coords)
     if stroke_coords:
         move = f"M {stroke_coords[0][0]} {stroke_coords[0][1]}"
         lines = " ".join(f"L {x} {y}" for (x, y) in stroke_coords[1:])
         d = f"{move} {lines}"
         path_elem = f'    <path d="{d}" fill="none" stroke="{stroke}" stroke-width="{stroke_width}" />\n'
+    else:
+        path_elem = ""
 
     svg = (
         f'<svg xmlns="http://www.w3.org/2000/svg" '
-        f'     width="{outer_w_mm}" height="{outer_h_mm}" '
-        f'     viewBox="0 0 {A4_W_PX:.4f} {A4_H_PX:.4f}">\n'
+        f'     width="{page_w_mm}mm" height="{page_h_mm}mm" '
+        f'     viewBox="0 0 {page_w_px:.4f} {page_h_px:.4f}">\n'
         f'  <g transform="translate({x:.4f},{y:.4f})">\n'
         f'{path_elem}'
         f'  </g>\n'
         f'</svg>\n'
     )
+
     with open(svg_path, "w", encoding="utf-8") as f:
         f.write(svg)
