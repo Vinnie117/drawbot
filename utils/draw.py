@@ -26,10 +26,12 @@ def create_drawing(img_path: str,
     
     # Validate fill_value if method is 'fill'
     if method == "fill":
-        if not isinstance(points_sampled, int):
-            raise ValueError("When method is 'fill', an integer 'points_sampled' must be provided.")
+        # points_sampled can be int, float (0,1], or 'N%'
+        if points_sampled is None:
+            raise ValueError("When method is 'fill', 'points_sampled' must be provided.")
         if colour_sampled not in {"black", "white"}:
-            raise ValueError("When method is 'fill', 'color_sampled' must be either 'black' or 'white'.")
+            raise ValueError("When method is 'fill', 'colour_sampled' must be either 'black' or 'white'.")
+
         
     # Check smoothing dict
     if smoothing is not None:
@@ -83,7 +85,7 @@ def create_drawing(img_path: str,
 
 
     if method == "contour":
-        # combine all contour points into one list
+        # (unchanged) collect all contour points
         fixed_contours, _ = cv2.findContours(binary, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         for cnt in fixed_contours:
             for pt in cnt:
@@ -94,17 +96,25 @@ def create_drawing(img_path: str,
             y_coords, x_coords = np.where(binary != 0)
         else:
             y_coords, x_coords = np.where(binary == 0)
-        black_pixels = np.column_stack((x_coords, y_coords))
-        sample_count = points_sampled  # adjust based on performance
-        if len(black_pixels) > sample_count:
-            indices = np.random.choice(len(black_pixels), sample_count, replace=False)
-            black_pixels = black_pixels[indices]
+        available = np.column_stack((x_coords, y_coords))
+        total_available = len(available)
 
-        points = black_pixels
+        # NEW: compute sample_count from int/float/'N%'
+        sample_count = _parse_points_sampled(points_sampled, max_points=total_available)
+
+        if total_available > sample_count:
+            indices = np.random.choice(total_available, sample_count, replace=False)
+            available = available[indices]
+
+        points = available
 
     points = np.array(points)
     num_points = len(points)
-    print(f"Computing {num_points} points")
+    if total_available > 0:
+        pct = 100 * num_points / total_available
+        print(f"Computing {num_points} points (from {total_available} available = {pct:.2f}%)")
+    else:
+        print(f"Computing {num_points} points (no available points detected!)")
 
     # Calculate single strike path
     start = time.time()
@@ -215,3 +225,48 @@ def path_to_centered_svg(
 
     with open(svg_path, "w", encoding="utf-8") as f:
         f.write(svg)
+
+
+import re
+
+def _parse_points_sampled(points_sampled, max_points: int) -> int:
+    """
+    Accepts:
+      - int (absolute count, except 1 = 100%)
+      - float in (0, 1] (fraction of max_points)
+      - str like '25%' (percentage of max_points)
+
+    Returns a clamped positive int in [1, max_points].
+    """
+    if not isinstance(max_points, int) or max_points <= 0:
+        raise ValueError("max_points must be a positive integer")
+
+    # int count
+    if isinstance(points_sampled, int):
+        if points_sampled == 1:
+            # Special case: interpret as 100%
+            return max_points
+        count = points_sampled
+
+    # fractional float
+    elif isinstance(points_sampled, float):
+        if not (0 < points_sampled <= 1):
+            raise ValueError("When float, points_sampled must be in (0, 1].")
+        count = int(round(points_sampled * max_points))
+
+    # percentage string like '25%'
+    elif isinstance(points_sampled, str) and re.fullmatch(r"\s*(\d{1,3})\s*%\s*", points_sampled):
+        p = int(re.fullmatch(r"\s*(\d{1,3})\s*%\s*", points_sampled).group(1))
+        if not (0 < p <= 100):
+            raise ValueError("Percentage must be between 1% and 100%.")
+        count = int(round((p / 100.0) * max_points))
+
+    else:
+        raise ValueError("points_sampled must be an int, a float in (0,1], or a 'N%' string.")
+
+    # clamp to [1, max_points]
+    count = max(1, min(count, max_points))
+    return count
+
+
+
