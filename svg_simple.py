@@ -137,7 +137,7 @@ def drop_tiny_contours_svg(
     T, levels,
     paper="A4", orientation="portrait",
     margin_mm=10, stroke="black",
-    linewidth=0.25, scale_pct=100,
+    linewidth=0.5, scale_pct=100,
     min_path_len_mm=2.0,          # drop fragments shorter than this
     simplify_tol_mm=0.2,          # Douglas–Peucker tolerance
 ):

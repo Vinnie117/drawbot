@@ -238,6 +238,10 @@ def contours_to_svg_centered(
     ax.set_aspect("equal")
     ax.contour(T, levels=levels, colors=stroke, linewidths=linewidth, origin="image")
 
+    # Make backgrounds transparent
+    fig.patch.set_alpha(0.0)     # Figure background
+    ax.patch.set_alpha(0.0)      # Axes background
+
     # Export to SVG
     buf = BytesIO()
     fig.savefig(buf, format="svg", bbox_inches=None, pad_inches=0)
