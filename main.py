@@ -1,25 +1,25 @@
 import matplotlib.pyplot as plt
-from utils.draw import create_drawing, save_stroke_svg_centered_for_axidraw
+from utils.draw import create_drawing, path_to_centered_svg
 import cv2
 from datetime import datetime
 import os
+import yaml
 
 
-BASE_IMAGE = 'vermeers_earring'
-BASE_IMAGE_FILE = BASE_IMAGE +'.jpg'
-ROOT_FOLDER = 'images/'
-INPUT_FOLDER = 'input/'
-OUTPUT_FOLDER = 'output/'
+# Load configs from YAML file
+with open("configs.yaml", "r") as f:
+    yaml_data = yaml.safe_load(f)
 
+# Unpack file paths
+paths = yaml_data["paths"]
+ROOT_FOLDER = paths["ROOT_FOLDER"]
+INPUT_FOLDER = paths["INPUT_FOLDER"]
+OUTPUT_FOLDER = paths["OUTPUT_FOLDER"]
+BASE_IMAGE = paths["BASE_IMAGE"]
+BASE_IMAGE_FILE = paths["BASE_IMAGE_FILE"]
 
-# Define multiple configurations to run
-configs = [
-    #{"RESIZE_PCT": 50, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 1000000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
-    {"RESIZE_PCT": 50, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 350000, "COLOUR_SAMPLED": "black", "SMOOTH": {
-        'window_length': 11, 'poly_order': 2}
-    },
-    #{"RESIZE_PCT": 30, "THRESHOLD": 127, "METHOD": "fill", "POINTS_SAMPLED": 150000, "COLOUR_SAMPLED": "black", "SMOOTH": None},
-]
+# Unpack experiment configs
+configs = yaml_data["configs"]
 
 
 for config in configs:
@@ -49,22 +49,16 @@ for config in configs:
     )
 
 
-
-    #cv2.imshow('Preview', test_image)
-    #cv2.waitKey(0)
-    #cv2.destroyAllWindows()
     cv_filename = f'{BASE_IMAGE}_{timestamp}.jpg'
     cv_filepath = os.path.join(cv_output_path, cv_filename)
     cv2.imwrite(cv_filepath, test_image)
-
+    height, width = test_image.shape
 
     svg_filename = f'{BASE_IMAGE}_{timestamp}.svg'
     svg_filepath = os.path.join(svg_output_path, svg_filename)
     h, w = test_image.shape[:2]
 
-    save_stroke_svg_centered_for_axidraw(stroke_coords, 600, 710, svg_filepath)
-
-
+    path_to_centered_svg(stroke_coords, width, height, svg_filepath, paper="A5", portrait=True)
 
     plt.imshow(test_image, cmap='gray')
     plt.axis('off')
