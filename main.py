@@ -6,16 +6,10 @@ import os
 import yaml
 
 
-# DRAWING_METHODS = {
-#     "contour": contour_drawing,
-#     "greedy_one_line": greedy_one_line_drawing
-# }
-
-
-
 # Load configs from YAML file
 with open("config_local.yaml", "r") as f:
     yaml_data = yaml.safe_load(f)
+configs = yaml_data.get("style", {})
 
 # Unpack file paths
 paths = yaml_data["paths"]
@@ -25,11 +19,24 @@ OUTPUT_FOLDER = paths["OUTPUT_FOLDER"]
 BASE_IMAGE = paths["BASE_IMAGE"]
 BASE_IMAGE_FILE = paths["BASE_IMAGE_FILE"]
 
-# Unpack experiment configs
-configs = yaml_data["configs"]["greedy_one_line"]
+
+# Prioritize whichever key is actually present
+if "contours" in configs:
+    active_style_config = configs["contours"]
+    style_config_type = "contours"
+elif "greedy_one_line" in configs:
+    active_style_config = configs["greedy_one_line"]
+    style_config_type = "greedy_one_line"
+else:
+    active_style_config = None
+    style_config_type = None
+
+print(f"Active config type: {style_config_type}")
+print(active_style_config)
 
 
-for config in configs:
+img_path=os.path.join(ROOT_FOLDER, INPUT_FOLDER, BASE_IMAGE_FILE)
+for config in active_style_config:
     
     # Timestamp per run
     timestamp = datetime.now().strftime('%Y%m%d_%H%M')
@@ -45,15 +52,7 @@ for config in configs:
 
 
     # Create the drawing
-    test_image, stroke_coords = create_drawing(
-        img_path=os.path.join(ROOT_FOLDER, INPUT_FOLDER, BASE_IMAGE_FILE),
-        resize_pct=config["RESIZE_PCT"],
-        threshold=config["THRESHOLD"],
-        method=config["METHOD"],
-        points_sampled=config["POINTS_SAMPLED"],
-        colour_sampled=config["COLOUR_SAMPLED"],
-        smoothing=config["SMOOTH"],
-    )
+    test_image, stroke_coords = create_drawing(style_config_type, config, img_path)
 
 
     cv_filename = f'{BASE_IMAGE}_{timestamp}.jpg'

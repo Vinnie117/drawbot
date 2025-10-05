@@ -1,4 +1,5 @@
 import cv2
+import os
 import numpy as np
 from typing import Union
 import time
@@ -8,7 +9,28 @@ from numba_progress import ProgressBar
 from scipy.interpolate import splprep, splev
 from scipy.signal import savgol_filter
 
-def create_drawing(img_path: str, 
+
+def create_drawing(style_config_type, style_config, img_path):
+
+    drawing = None
+    stroke_coords = None
+    
+    if style_config_type == "greedy_one_line":
+
+        drawing, stroke_coords = create_greedy_one_line_drawing(
+            img_path=img_path,
+            resize_pct=style_config["RESIZE_PCT"],
+            threshold=style_config["THRESHOLD"],
+            method=style_config["METHOD"],
+            points_sampled=style_config["POINTS_SAMPLED"],
+            colour_sampled=style_config["COLOUR_SAMPLED"],
+            smoothing=style_config["SMOOTH"]
+            )
+        
+    return drawing, stroke_coords
+
+
+def create_greedy_one_line_drawing(img_path: str, 
                    resize_pct: int,
                    threshold: Union[int, str], 
                    method: str,
