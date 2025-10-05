@@ -6,18 +6,19 @@ paths:
   BASE_IMAGE_FILE: picture file name
 
 configs:
-  - RESIZE_PCT: scale for resizing as integer
-    THRESHOLD: threshold for black white conversion as integer or otsu
-    METHOD: fill or contour
-    POINTS_SAMPLED: max number of points as percentage
-    COLOUR_SAMPLED: white or black
-    SMOOTH: smoothing ot not -> null becomes None in Python
+  greedy_one_line:
+    - RESIZE_PCT: scale for resizing as integer
+      THRESHOLD: threshold for black white conversion as integer or otsu
+      METHOD: fill or contour
+      POINTS_SAMPLED: max number of points as percentage
+      COLOUR_SAMPLED: white or black
+      SMOOTH: smoothing ot not -> null becomes None in Python
 
-  # Can add multiple configs -> will be list of dicts in Python
-  - RESIZE_PCT: scale for resizing
-    THRESHOLD: threshold for black white conversion
-    METHOD: fill
-    POINTS_SAMPLED: max number of points as percentage
-    COLOUR_SAMPLED: white or black
-    SMOOTH: smoothing ot not
+    # Can add multiple configs -> will be list of dicts in Python
+    - RESIZE_PCT: scale for resizing
+      THRESHOLD: threshold for black white conversion
+      METHOD: fill
+      POINTS_SAMPLED: max number of points as percentage
+      COLOUR_SAMPLED: white or black
+      SMOOTH: smoothing ot not
 

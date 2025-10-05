@@ -20,11 +20,11 @@ Option 4: Axidraw skip heavy optimization: ad.options.reordering = 4
 
 '''
 
-CONTOURS = 600
+CONTOURS = 300
 
 
 # 1) Load image as grayscale
-image = io.imread(r"images\input\foto.jpeg", as_gray=True)
+image = io.imread(r"images\input\hokusai_wave.jpg", as_gray=True)
 image = transform.rescale(image, 1, anti_aliasing=False)
 
 # 2) Initialize the level set function
@@ -44,6 +44,6 @@ contour_levels = np.linspace(T.min(), T.max(), CONTOURS)
 # svg = contours_to_svg_centered_simplified(T, contour_levels, "A5", margin_mm=12, simplify_tol_mm=0.2, min_poly_pts=6, sampling_stride=1)
 # svg = drop_tiny_contours_svg(T, contour_levels, "A5", margin_mm=12, simplify_tol_mm=0.2, min_path_len_mm=2.0)
 
-svg = contours_to_svg_centered (T, contour_levels, "A5", margin_mm=20)
+svg = contours_to_svg_centered (T, contour_levels, "A4", margin_mm=20, orientation="landscape")
 
-save_svg(svg, "bot/test.svg")
+save_svg(svg, "bot/hokusai_wave2.svg")

@@ -6,8 +6,15 @@ import os
 import yaml
 
 
+# DRAWING_METHODS = {
+#     "contour": contour_drawing,
+#     "greedy_one_line": greedy_one_line_drawing
+# }
+
+
+
 # Load configs from YAML file
-with open("configs.yaml", "r") as f:
+with open("config_local.yaml", "r") as f:
     yaml_data = yaml.safe_load(f)
 
 # Unpack file paths
@@ -19,7 +26,7 @@ BASE_IMAGE = paths["BASE_IMAGE"]
 BASE_IMAGE_FILE = paths["BASE_IMAGE_FILE"]
 
 # Unpack experiment configs
-configs = yaml_data["configs"]
+configs = yaml_data["configs"]["greedy_one_line"]
 
 
 for config in configs:
