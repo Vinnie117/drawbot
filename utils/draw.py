@@ -110,9 +110,9 @@ def create_drawing(img_path: str,
 
     points = np.array(points)
     num_points = len(points)
-    if total_available > 0:
-        pct = 100 * num_points / total_available
-        print(f"Computing {num_points} points (from {total_available} available = {pct:.2f}%)")
+    if num_points > 0:
+        pct = 100 * num_points / num_points
+        print(f"Computing {num_points} points (from {num_points} available = {pct:.2f}%)")
     else:
         print(f"Computing {num_points} points (no available points detected!)")
 
