@@ -171,7 +171,7 @@ def build_centered_contour_axes(
     levels,
     paper="A4",
     orientation="portrait",
-    margin_mm=10,
+    margin_mm=25,
     stroke="black",
     linewidth=0.5,
 ):

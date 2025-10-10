@@ -83,9 +83,15 @@ for config in active_style_config:
         T = test_image
         contour_levels = stroke_coords
 
-        svg = contours_to_svg_centered(T, contour_levels, "A4", margin_mm=25, orientation="landscape")
+        svg = contours_to_svg_centered(T, contour_levels, 
+                                       paper=config["FORMAT"], 
+                                       margin_mm=config["MARGIN_MM"], 
+                                       orientation=config["ORIENTATION"])
         save_svg(svg, svg_filepath)
-        fig, ax = build_centered_contour_axes(T, contour_levels, paper="A4", margin_mm=25, orientation="landscape")
+        fig, ax = build_centered_contour_axes(T, contour_levels, 
+                                              paper=config["FORMAT"], 
+                                              margin_mm=config["MARGIN_MM"], 
+                                              orientation=config["ORIENTATION"])
         ax.set_title(plt_filename)
         export_png(fig, plt_filepath, dpi=300)
         plt.close(fig)
