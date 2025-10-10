@@ -4,7 +4,9 @@ import cv2
 from datetime import datetime
 import os
 import yaml
-
+from svg import contours_to_svg_centered, export_svg, export_png, build_centered_contour_axes, save_svg
+from skimage import io
+import numpy as np
 
 # Load configs from YAML file
 with open("config_local.yaml", "r") as f:
@@ -64,41 +66,67 @@ for config in active_style_config:
     svg_filepath = os.path.join(svg_output_path, svg_filename)
     h, w = test_image.shape[:2]
 
-    path_to_centered_svg(stroke_coords, width, height, svg_filepath, paper="A5", portrait=True)
 
-    plt.imshow(test_image, cmap='gray')
-    plt.axis('off')
-    plt.title(BASE_IMAGE_FILE)
+    h_now = datetime.now().strftime('%Y%m%d_%H%M')
+    cv_filename  = f'{BASE_IMAGE}_{h_now}.png'
+    cv_filepath  = os.path.join(cv_output_path,  cv_filename)
 
-    # Get current axes
-    ax = plt.gca()
+    svg_filename = f'{BASE_IMAGE}_{h_now}.svg'
+    svg_filepath = os.path.join(svg_output_path, svg_filename)
 
-    # Add left-aligned text relative to the image (axes)
-    annotation = f"RESIZE_PCT: {config['RESIZE_PCT']}\n" \
-                 f"THRESHOLD: {config['THRESHOLD']}\n" \
-                 f"POINTS_SAMPLED: {config['POINTS_SAMPLED']}\n" \
-                 f"METHOD: {config['METHOD']}\n" \
-                 f"COLOUR_SAMPLED: {config['COLOUR_SAMPLED']}"
-
-    ax.text(0.0, -0.1, annotation,
-            transform=ax.transAxes,
-            ha='left', va='top', fontsize=10)
-    
-    # Right-aligned annotation (same y-coordinate)
-    smooth_config = config['SMOOTH']
-    if smooth_config is None:
-        smooth_annotation = "SMOOTH: NONE"
-    else:
-        smooth_annotation = "SMOOTH:\n" + "\n".join(
-            [f"  {k}: {v}" for k, v in smooth_config.items()]
-        )
-    ax.text(1.0, -0.1, smooth_annotation,
-            transform=ax.transAxes,
-            ha='right', va='top', fontsize=10)
-    
-    plt.subplots_adjust(bottom=0.25)  # Add space below for the text
-
-    plt_filename = f'{BASE_IMAGE}_{timestamp}.png'
+    plt_filename = f'{BASE_IMAGE}_{h_now}.png'
     plt_filepath = os.path.join(plt_output_path, plt_filename)
-    plt.savefig(plt_filepath, dpi=300, bbox_inches='tight')
-    plt.clf()
+
+
+    if style_config_type == "contours":
+        # Unpack: for contours, create_drawing returns (T, contour_levels)
+        T = test_image
+        contour_levels = stroke_coords
+
+        svg = contours_to_svg_centered(T, contour_levels, "A4", margin_mm=25, orientation="landscape")
+        save_svg(svg, svg_filepath)
+        fig, ax = build_centered_contour_axes(T, contour_levels, paper="A4", margin_mm=25, orientation="landscape")
+        ax.set_title(plt_filename)
+        export_png(fig, plt_filepath, dpi=300)
+        plt.close(fig)
+
+
+    if style_config_type == "greedy_one_line":
+        path_to_centered_svg(stroke_coords, width, height, svg_filepath, paper="A5", portrait=True)
+
+        plt.imshow(test_image, cmap='gray')
+        plt.axis('off')
+        plt.title(BASE_IMAGE_FILE)
+
+        # Get current axes
+        ax = plt.gca()
+
+        # Add left-aligned text relative to the image (axes)
+        annotation = f"RESIZE_PCT: {config['RESIZE_PCT']}\n" \
+                    f"THRESHOLD: {config['THRESHOLD']}\n" \
+                    f"POINTS_SAMPLED: {config['POINTS_SAMPLED']}\n" \
+                    f"METHOD: {config['METHOD']}\n" \
+                    f"COLOUR_SAMPLED: {config['COLOUR_SAMPLED']}"
+
+        ax.text(0.0, -0.1, annotation,
+                transform=ax.transAxes,
+                ha='left', va='top', fontsize=10)
+        
+        # Right-aligned annotation (same y-coordinate)
+        smooth_config = config['SMOOTH']
+        if smooth_config is None:
+            smooth_annotation = "SMOOTH: NONE"
+        else:
+            smooth_annotation = "SMOOTH:\n" + "\n".join(
+                [f"  {k}: {v}" for k, v in smooth_config.items()]
+            )
+        ax.text(1.0, -0.1, smooth_annotation,
+                transform=ax.transAxes,
+                ha='right', va='top', fontsize=10)
+        
+        plt.subplots_adjust(bottom=0.25)  # Add space below for the text
+
+        plt_filename = f'{BASE_IMAGE}_{timestamp}.png'
+        plt_filepath = os.path.join(plt_output_path, plt_filename)
+        plt.savefig(plt_filepath, dpi=300, bbox_inches='tight')
+        plt.clf()

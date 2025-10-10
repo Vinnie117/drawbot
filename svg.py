@@ -1,5 +1,9 @@
 from io import BytesIO
 import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
+import os
+import numpy as np
+
 
 def contours_to_svg(T, levels, stroke="black", linewidth=0.3, figsize=8, pad_inches=0):
     """
@@ -50,8 +54,6 @@ def save_svg(svg_text, path):
 
 
 
-from io import BytesIO
-import matplotlib.pyplot as plt
 
 def contours_to_svg_paged(
     T,
@@ -156,23 +158,32 @@ def save_svg(svg_text, path):
         f.write(svg_text)
 
 
-from io import BytesIO
-import matplotlib.pyplot as plt
-import os
 
-def contours_to_svg_centered(
+def contours_to_svg_centered(*args, **kwargs):
+    fig, ax = build_centered_contour_axes(*args, **kwargs)
+    svg_text = export_svg(fig)
+    plt.close(fig)
+    return svg_text
+
+
+def build_centered_contour_axes(
     T,
     levels,
-    paper="A4",                 # "A3", "A4", or "A5"
-    orientation="portrait",     # "portrait" or "landscape"
-    margin_mm=10,               # scalar, (h, v), or (l, r, t, b)
+    paper="A4",
+    orientation="portrait",
+    margin_mm=10,
     stroke="black",
-    linewidth=0.5
+    linewidth=0.5,
 ):
     """
-    Render contour lines as an SVG sized exactly to A3/A4/A5,
-    with the plot centered on the page inside given margins.
+    Build a Matplotlib (fig, ax) layout centered on an A3/A4/A5 paper size.
+
+    Returns
+    -------
+    fig, ax : tuple
+        Matplotlib Figure and Axes objects, with contours already drawn.
     """
+
     # --- Page sizes (mm) ---
     paper_sizes_mm = {
         "A3": (297.0, 420.0),
@@ -186,7 +197,7 @@ def contours_to_svg_centered(
     if orientation.lower() == "landscape":
         w_mm, h_mm = h_mm, w_mm
 
-    # --- Margins handling ---
+    # --- Margins ---
     def _parse_margins(m):
         if isinstance(m, (int, float)):
             return m, m, m, m
@@ -200,29 +211,26 @@ def contours_to_svg_centered(
 
     l_mm, r_mm, t_mm, b_mm = _parse_margins(margin_mm)
 
-    # Content area (mm)
+    # --- Compute content area ---
     content_w_mm = max(0.0, w_mm - l_mm - r_mm)
     content_h_mm = max(0.0, h_mm - t_mm - b_mm)
 
-    # --- Aspect ratio handling ---
     arr_h, arr_w = T.shape
     arr_aspect = arr_w / arr_h
     content_aspect = content_w_mm / content_h_mm
 
     if arr_aspect > content_aspect:
-        # Limited by width
         plot_w_mm = content_w_mm
         plot_h_mm = content_w_mm / arr_aspect
     else:
-        # Limited by height
         plot_h_mm = content_h_mm
         plot_w_mm = content_h_mm * arr_aspect
 
-    # Center inside the content box
+    # Center inside content box
     offset_x_mm = l_mm + (content_w_mm - plot_w_mm) / 2
     offset_y_mm = b_mm + (content_h_mm - plot_h_mm) / 2
 
-    # Convert to inches
+    # --- Convert to inches ---
     mm_to_in = 1.0 / 25.4
     w_in, h_in = w_mm * mm_to_in, h_mm * mm_to_in
 
@@ -232,29 +240,26 @@ def contours_to_svg_centered(
     ax_width_frac  = plot_w_mm / w_mm
     ax_height_frac = plot_h_mm / h_mm
 
-    # --- Plot ---
+    # --- Create figure and axes ---
     fig = plt.figure(figsize=(w_in, h_in))
     ax = fig.add_axes([left_frac, bottom_frac, ax_width_frac, ax_height_frac])
     ax.set_axis_off()
     ax.set_aspect("equal")
+
+    # --- Draw the contours (correct orientation) ---
     ax.contour(T, levels=levels, colors=stroke, linewidths=linewidth, origin="image")
 
-    # Make backgrounds transparent
-    fig.patch.set_alpha(0.0)     # Figure background
-    ax.patch.set_alpha(0.0)      # Axes background
+    return fig, ax
 
-    # Export to SVG
+
+
+def export_svg(fig):
     buf = BytesIO()
     fig.savefig(buf, format="svg", bbox_inches=None, pad_inches=0)
-    plt.close(fig)
     return buf.getvalue().decode("utf-8")
 
-
-def save_svg(svg_text, path):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        f.write(svg_text)
-
+def export_png(fig, path, dpi=300, facecolor="white"):
+    fig.savefig(path, dpi=dpi, bbox_inches=None, pad_inches=0, facecolor=facecolor)
 
 from io import BytesIO
 import numpy as np

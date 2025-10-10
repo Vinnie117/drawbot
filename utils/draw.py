@@ -8,7 +8,9 @@ from algos.traveling_salesman import approach_greedy
 from numba_progress import ProgressBar
 from scipy.interpolate import splprep, splev
 from scipy.signal import savgol_filter
-
+from skimage import io, transform
+import skfmm
+from svg import contours_to_svg_centered, save_svg
 
 def create_drawing(style_config_type, style_config, img_path):
 
@@ -27,7 +29,41 @@ def create_drawing(style_config_type, style_config, img_path):
             smoothing=style_config["SMOOTH"]
             )
         
+    if style_config_type == "contours":
+
+        drawing, stroke_coords = create_contours_drawing(
+            img_path=img_path,
+            contours=style_config["LEVELS"]
+        )
+        
     return drawing, stroke_coords
+
+
+def create_contours_drawing(contours: int, img_path):
+    contours = contours
+
+    # 1) Load image as grayscale
+    image = io.imread(img_path, as_gray=True)
+    image = transform.rescale(image, 1, anti_aliasing=False)
+
+    # 2) Initialize the level set function
+    phi = np.ones_like(image)
+    cy, cx = np.array(phi.shape) // 2
+    phi[cy, cx] = 0  # set the image center as starting point
+
+    # 3) Compute the travel time using the Fast Marching Method
+    T = skfmm.travel_time(phi, image)
+
+    # 4) Define contour levels
+    contour_levels = np.linspace(T.min(), T.max(), contours)
+
+    #### Do this to get rid of minimal contour points at the border
+    mask = np.zeros_like(T, dtype=bool)
+    mask[1:-1, 1:-1] = True  # keep only interior
+    T_masked = np.where(mask, T, np.nan)
+
+    return T_masked, contour_levels
+
 
 
 def create_greedy_one_line_drawing(img_path: str, 
