@@ -6,6 +6,7 @@ from skimage import io, transform
 from utils.draw import contours_to_centered_svg, contours_to_centered_svg2
 from svg import contours_to_svg, save_svg, contours_to_svg_paged, contours_to_svg_centered
 from svg_simple import contours_to_svg_centered_simplified, drop_tiny_contours_svg
+from skimage import measure
 
 ''' Problem: too many separate (small?) parts
 Option 1: Reduce contour count / number of levels
@@ -44,6 +45,12 @@ contour_levels = np.linspace(T.min(), T.max(), CONTOURS)
 # svg = contours_to_svg_centered_simplified(T, contour_levels, "A5", margin_mm=12, simplify_tol_mm=0.2, min_poly_pts=6, sampling_stride=1)
 # svg = drop_tiny_contours_svg(T, contour_levels, "A5", margin_mm=12, simplify_tol_mm=0.2, min_path_len_mm=2.0)
 
-svg = contours_to_svg_centered (T, contour_levels, "A4", margin_mm=20, orientation="landscape")
 
-save_svg(svg, "bot/hokusai_wave2.svg")
+#### Do this to get rid of minimal contour points at the border
+mask = np.zeros_like(T, dtype=bool)
+mask[1:-1, 1:-1] = True  # keep only interior
+T_masked = np.where(mask, T, np.nan)
+
+svg = contours_to_svg_centered (T_masked, contour_levels, "A4", margin_mm=25, orientation="landscape")
+
+save_svg(svg, "bot/hokusai_wave_A4_300.svg")
