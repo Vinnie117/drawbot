@@ -163,23 +163,24 @@ import os
 def contours_to_svg_centered(
     T,
     levels,
-    paper="A4",                 # "A4" or "A5"
+    paper="A4",                 # "A3", "A4", or "A5"
     orientation="portrait",     # "portrait" or "landscape"
     margin_mm=10,               # scalar, (h, v), or (l, r, t, b)
     stroke="black",
     linewidth=0.5
 ):
     """
-    Render contour lines as an SVG sized exactly to A4/A5,
+    Render contour lines as an SVG sized exactly to A3/A4/A5,
     with the plot centered on the page inside given margins.
     """
     # --- Page sizes (mm) ---
     paper_sizes_mm = {
+        "A3": (297.0, 420.0),
         "A4": (210.0, 297.0),
         "A5": (148.0, 210.0),
     }
     if paper not in paper_sizes_mm:
-        raise ValueError("paper must be 'A4' or 'A5'")
+        raise ValueError("paper must be 'A3', 'A4' or 'A5'")
 
     w_mm, h_mm = paper_sizes_mm[paper]
     if orientation.lower() == "landscape":
