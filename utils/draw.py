@@ -11,6 +11,7 @@ from scipy.signal import savgol_filter
 from skimage import io, transform
 import skfmm
 from svg import contours_to_svg_centered, save_svg
+from skimage import filters
 
 def create_drawing(style_config_type, style_config, img_path):
 
@@ -33,18 +34,26 @@ def create_drawing(style_config_type, style_config, img_path):
 
         drawing, stroke_coords = create_contours_drawing(
             img_path=img_path,
-            contours=style_config["LEVELS"]
+            contours=style_config["LEVELS"],
+            smooth_no_dots=style_config["SMOOTHING_NO_DOTS"]
         )
         
     return drawing, stroke_coords
 
 
-def create_contours_drawing(contours: int, img_path):
+def create_contours_drawing(contours: int, img_path, smooth_no_dots):
     contours = contours
 
     # 1) Load image as grayscale
     image = io.imread(img_path, as_gray=True)
     image = transform.rescale(image, 1, anti_aliasing=False)
+
+    if smooth_no_dots == True:
+        # Light smoothing before fast marching
+        image = filters.gaussian(image, sigma=1.0, preserve_range=True)
+
+        # (optional) stronger but edge-preserving:
+        # image_smooth = restoration.denoise_tv_chambolle(image, weight=0.05)
 
     # 2) Initialize the level set function
     phi = np.ones_like(image)
