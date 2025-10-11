@@ -4,9 +4,7 @@ import cv2
 from datetime import datetime
 import os
 import yaml
-from svg import contours_to_svg_centered, export_svg, export_png, build_centered_contour_axes, save_svg
-from skimage import io
-import numpy as np
+from svg import contours_to_svg_centered, export_png, build_centered_contour_axes, save_svg
 
 # Load configs from YAML file
 with open("config_local.yaml", "r") as f:
