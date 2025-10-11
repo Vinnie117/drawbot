@@ -52,10 +52,8 @@ for config in active_style_config:
     os.makedirs(plt_output_path, exist_ok=True)
     os.makedirs(svg_output_path, exist_ok=True)
 
-
     # Create the drawing
     test_image, stroke_coords = create_drawing(style_config_type, config, img_path)
-
 
     cv_filename = f'{BASE_IMAGE}_{timestamp}.jpg'
     cv_filepath = os.path.join(cv_output_path, cv_filename)
@@ -65,7 +63,6 @@ for config in active_style_config:
     svg_filename = f'{BASE_IMAGE}_{timestamp}.svg'
     svg_filepath = os.path.join(svg_output_path, svg_filename)
     h, w = test_image.shape[:2]
-
 
     h_now = datetime.now().strftime('%Y%m%d_%H%M')
     cv_filename  = f'{BASE_IMAGE}_{h_now}.png'
