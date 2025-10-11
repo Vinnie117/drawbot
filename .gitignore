@@ -4,3 +4,4 @@ images/output/*
 !images/output/demo/**
 
 config_local.yaml
+config_local_master.yaml
