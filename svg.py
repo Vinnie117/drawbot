@@ -20,6 +20,11 @@ def export_png(fig, path, dpi=300, facecolor="white"):
 
 def contours_to_svg_centered(*args, **kwargs):
     fig, ax = build_centered_contour_axes(*args, **kwargs)
+    
+    # Make backgrounds transparent
+    fig.patch.set_alpha(0.0)     # Figure background
+    ax.patch.set_alpha(0.0)      # Axes background
+
     svg_text = export_svg(fig)
     plt.close(fig)
     return svg_text
@@ -107,10 +112,6 @@ def build_centered_contour_axes(
 
     # --- Draw the contours (correct orientation) ---
     ax.contour(T, levels=levels, colors=stroke, linewidths=linewidth, origin="image")
-
-    # Make backgrounds transparent
-    fig.patch.set_alpha(0.0)     # Figure background
-    ax.patch.set_alpha(0.0)      # Axes background
 
     return fig, ax
 
