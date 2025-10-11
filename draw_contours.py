@@ -124,18 +124,22 @@ def contours_to_svg_centered(
     plt.close(fig)
     return buf.getvalue().decode("utf-8")
 
-
+from skimage import filters, restoration, morphology
 # 1) Load image as grayscale
-image = io.imread(r"images\input\vangogh_starrynight.jpg", as_gray=True)
+image = io.imread(r"images\input\hokusai_wave.jpg", as_gray=True)
 image = transform.rescale(image, 1, anti_aliasing=False)
 
-# 2) Initialize the level set function
-phi = np.ones_like(image)
-cy, cx = np.array(phi.shape) // 2
-phi[cy, cx] = 0  # set the image center as starting point
+# Light smoothing before fast marching
+image_smooth = filters.gaussian(image, sigma=1.0, preserve_range=True)
 
-# 3) Compute the travel time using the Fast Marching Method
-T = skfmm.travel_time(phi, image)
+# (optional) stronger but edge-preserving:
+# image_smooth = restoration.denoise_tv_chambolle(image, weight=0.05)
+
+phi = np.ones_like(image_smooth)
+cy, cx = np.array(phi.shape) // 2
+phi[cy, cx] = 0
+
+T = skfmm.travel_time(phi, image_smooth)
 
 # 4) Define contour levels
 contour_levels = np.linspace(T.min(), T.max(), CONTOURS)
@@ -152,6 +156,6 @@ mask = np.zeros_like(T, dtype=bool)
 mask[1:-1, 1:-1] = True  # keep only interior
 T_masked = np.where(mask, T, np.nan)
 
-svg = contours_to_svg_centered (T_masked, contour_levels, "A4", margin_mm=20, orientation="landscape")
+svg = contours_to_svg_centered (T_masked, contour_levels, "A4", margin_mm=25, orientation="landscape")
 
-save_svg(svg, "bot/test.svg")
+save_svg(svg, "bot/test_wave.svg")
