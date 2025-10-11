@@ -2,9 +2,6 @@ from io import BytesIO
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.collections import LineCollection
-from skimage import measure
-
 
 # Optional: helper to save and auto-create folders
 def save_svg(svg_text, path):
