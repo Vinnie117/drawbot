@@ -1,6 +1,5 @@
 from io import BytesIO
 import os
-import numpy as np
 import matplotlib.pyplot as plt
 
 # Optional: helper to save and auto-create folders
@@ -15,7 +14,7 @@ def export_svg(fig):
     return buf.getvalue().decode("utf-8")
 
 def export_png(fig, path, dpi=300, facecolor="white"):
-    fig.savefig(path, dpi=dpi, bbox_inches=None, pad_inches=0, facecolor=facecolor)
+    fig.savefig(path, dpi=dpi, bbox_inches='tight', pad_inches=0.3, facecolor=facecolor)
 
 
 def contours_to_svg_centered(*args, **kwargs):

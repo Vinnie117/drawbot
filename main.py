@@ -87,7 +87,17 @@ for config in active_style_config:
                                               paper=config["FORMAT"], 
                                               margin_mm=config["MARGIN_MM"], 
                                               orientation=config["ORIENTATION"])
-        ax.set_title(plt_filename)
+        ax.set_title(BASE_IMAGE_FILE, fontsize=20)
+
+        # Add left-aligned text relative to the image (axes)
+        annotation = f"LEVELS: {config['LEVELS']}\n" \
+                    f"MARGIN_MM: {config['MARGIN_MM']}\n"\
+                    f"SMOOTHING_NO_DOTS: {config['SMOOTHING_NO_DOTS']}\n"
+
+        ax.text(0.0, -0.1, annotation,
+                transform=ax.transAxes,
+                ha='left', va='top', fontsize=20)
+        
         export_png(fig, plt_filepath, dpi=300)
         plt.close(fig)
 
