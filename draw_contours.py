@@ -3,10 +3,7 @@ import numpy as np
 from skimage import io
 import matplotlib.pyplot as plt
 from skimage import io, transform
-from utils.draw import contours_to_centered_svg, contours_to_centered_svg2
-from svg import contours_to_svg, save_svg, contours_to_svg_paged
-from svg_simple import contours_to_svg_centered_simplified, drop_tiny_contours_svg
-from skimage import measure
+from svg import save_svg
 from io import BytesIO
 
 ''' Problem: too many separate (small?) parts
@@ -144,18 +141,12 @@ T = skfmm.travel_time(phi, image_smooth)
 # 4) Define contour levels
 contour_levels = np.linspace(T.min(), T.max(), CONTOURS)
 
-#After you compute T and contour_levels:
-# svg = contours_to_svg(T, contour_levels, stroke="black", linewidth=0.5, figsize=8, pad_inches=0)
-
-# svg = contours_to_svg_centered_simplified(T, contour_levels, "A5", margin_mm=12, simplify_tol_mm=0.2, min_poly_pts=6, sampling_stride=1)
-# svg = drop_tiny_contours_svg(T, contour_levels, "A5", margin_mm=12, simplify_tol_mm=0.2, min_path_len_mm=2.0)
-
-
 #### Do this to get rid of minimal contour points at the border
 mask = np.zeros_like(T, dtype=bool)
 mask[1:-1, 1:-1] = True  # keep only interior
 T_masked = np.where(mask, T, np.nan)
 
+#After you compute T and contour_levels:
 svg = contours_to_svg_centered (T_masked, contour_levels, "A4", margin_mm=25, orientation="landscape")
 
 save_svg(svg, "bot/test_wave.svg")
